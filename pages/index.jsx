@@ -1,15 +1,70 @@
 import Head from "next/head";
 import useSWR from "swr";
-import useGeoLocation from "../hooks/useGeoLocation";
 import Table from "react-bootstrap/Table";
+import { Button, InputGroup, Form } from "react-bootstrap";
+import { useRef, useEffect, useState } from "react";
+import Search from "./Search";
+import { useJsApiLoader } from "@react-google-maps/api";
+
 export default function Home() {
-  const location = useGeoLocation();
+  const [libraries] = useState(["places"]);
 
-  const fetcher = (...args) => fetch(...args).then((res) => res.json());
-  const { data, error } = useSWR("http://localhost:5000/current", fetcher);
+  const fetcher = (...args) => {
+    return fetch(...args)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return res.json();
+      })
+      .catch((error) => {
+        fetch("http://localhost:5000/reset");
+        window.location
+          .reload()
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Failed to reset the server");
+            }
+          })
+          .catch((error) => {
+            console.log(error.message);
+          });
+      });
+  };
+  useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+    libraries,
+  });
+  const { data, error } = useSWR("http://localhost:5000/current", fetcher, {
+    errorRetryCount: 5,
+    errorRetryInterval: 5000,
+  });
 
-  if (error) return <div className="celsius">Hups jokin meni pieleen.</div>;
-  if (!data) return <p className="celsius">Loading...</p>;
+  if (error) {
+    return <div className="celsius">Failed to fetch data</div>;
+  }
+  if (!data) {
+    return <p className="celsius">Loading...</p>;
+  }
+
+  const sendLocationData = async (latitude, longitude, placeName) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/location", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          latitude,
+          longitude,
+          placeName,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
 
   let temp = data.main.temp;
   let feelsLike = data.main.feels_like;
@@ -34,16 +89,22 @@ export default function Home() {
       </Head>
       <main variant="dark">
         <div className="celsius">
-          <h1 className="celsius">Location: {data.name}</h1>
-          <img src={data.icon} alt="icon" />
-          <p>Temperature: {Math.round(temp)}°C</p>
-          <p>Wind: {data.wind.speed} M/S</p>
-          <p>Pressure: {data.main.pressure} hPa</p>
-          <p>Humidity: {data.main.humidity} %</p>
-          <p>
-            Feels like: {Math.round(feelsLike)}°C, {postIds}
-          </p>
-          <p>Last updated: {updated}</p>
+          <Form
+            onSubmit={(event) => sendLocationData(event, latitude, longitude)}
+            className="m-3"
+          >
+            <Search sendLocationData={sendLocationData} />
+            <h1>Location: {data.name}</h1>
+            <img src={data.icon} alt="icon" />
+            <p>Temperature: {Math.round(temp)}°C</p>
+            <p>Wind: {data.wind.speed} M/S</p>
+            <p>Pressure: {data.main.pressure} hPa</p>
+            <p>Humidity: {data.main.humidity} %</p>
+            <p>
+              Feels like: {Math.round(feelsLike)}°C, {postIds}
+            </p>
+            <p>Last updated: {updated}</p>
+          </Form>
         </div>
       </main>
     </>

@@ -1,34 +1,37 @@
 import { useEffect, useState } from "react";
-const useGeoLocation = () => {
+
+const useGeoLocation = (onPlaceNameReceived) => {
   const [location, setLocation] = useState({
     loaded: false,
     coordinates: { lat: 0, lng: 0 },
+    placeName: "",
   });
 
   const onSuccess = (location) => {
-    setLocation({
-      loaded: true,
-      coordinates: {
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      },
+    const geocoder = new window.google.maps.Geocoder();
+    const latlng = {
+      lat: location.coords.latitude,
+      lng: location.coords.longitude,
+    };
+    geocoder.geocode({ location: latlng }, (results, status) => {
+      if (status === "OK") {
+        if (results[0]) {
+          setLocation({
+            loaded: true,
+            coordinates: latlng,
+            placeName: results[0].formatted_address,
+          });
+          if (onPlaceNameReceived) {
+            onPlaceNameReceived(results[0].formatted_address);
+          }
+        } else {
+          console.log("No results found");
+        }
+      } else {
+        console.log("Geocoder failed due to: " + status);
+      }
     });
   };
-
-  useEffect(() => {
-    if (location.loaded) {
-      fetch("http://localhost:5000/api/location", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          latitude: location.coordinates.lat,
-          longitude: location.coordinates.lng,
-        }),
-      }).catch((error) => {
-        console.log(error.message);
-      });
-    }
-  }, [location]);
 
   const onError = (error) => {
     setLocation({
@@ -37,7 +40,6 @@ const useGeoLocation = () => {
         lat: 60.192059,
         lng: 24.945831,
       },
-
       error: {
         code: error.code,
         message: error.message,
