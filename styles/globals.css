@@ -8,3 +8,32 @@ html {
   background-color: #121212;
   color: white;
 }
+.centerTable {
+  width: 75% !important;
+  margin-top: 2%;
+  margin-bottom: 5% !important;
+  margin-left: 12%;
+}
+@media only screen and (max-width: 900px) {
+  .centerTable {
+    width: 100% !important;
+    margin-top: 0%;
+    margin-bottom: 0% !important;
+    margin-left: 0%;
+  }
+}
+
+.move {
+  padding-top: 1% !important;
+}
+@media only screen and (max-width: 900px) {
+  .move {
+    padding-top: 8% !important;
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  .mov {
+    padding-top: 4% !important;
+  }
+}

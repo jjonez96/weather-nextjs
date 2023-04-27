@@ -55,16 +55,13 @@ const Search = ({ sendLocationData }) => {
     <>
       <InputGroup>
         <Form.Control
-          className="bg-dark text-light mx-auto"
+          className="bg-dark text-light "
           type="text"
           ref={originRef}
           onChange={(event) => sendLocationData(event.target.value)}
           required
         />
-        <Button
-          onClick={handleOriginClick}
-          className="text-light float-right icon"
-        >
+        <Button onClick={handleOriginClick} size="sm" className=" ">
           Your location
         </Button>
       </InputGroup>
